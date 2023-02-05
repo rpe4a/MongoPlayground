@@ -3,8 +3,8 @@
 public class MongoDbOptions
 {
     public const string Key = "MongoDb";
-    public const string ConnectionString = "DefaultConnection";
 
+    public string ConnectionString { get; set; }
     public string Database { get; set; }
 
     public Collections Collections { get; set; }

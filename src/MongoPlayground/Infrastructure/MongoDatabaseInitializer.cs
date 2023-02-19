@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Options;
+﻿using System.Collections.Immutable;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
+using MongoPlayground.Models;
 
 namespace MyApp.Infrastructure;
 
@@ -13,14 +16,33 @@ public class MongoDatabaseInitializer
         _options = options.Value;
     }
 
-    public async Task InitializeDatabase(CancellationToken token = default)
+    public async Task InitializeDatabaseAsync(CancellationToken token = default)
     {
         await Task.WhenAll(
-            _context.Database.CreateCollectionAsync(_options.Collections.PeopleCollectionName,
-                cancellationToken: token),
-            _context.Database.CreateCollectionAsync(_options.Collections.ZipCodesCollectionName,
-                cancellationToken: token),
-            _context.Database.CreateCollectionAsync(_options.Collections.RestaurantsCollectionName,
-                cancellationToken: token));
+            TryCreateCollection(_options.Collections.PeopleCollectionName, token),
+            TryCreateCollection(_options.Collections.ZipCodesCollectionName, token),
+            TryCreateCollection(_options.Collections.RestaurantsCollectionName, token));
+
+        await InitializeIndexesAsync(token);
+    }
+
+    private async Task TryCreateCollection(string collectionName, CancellationToken token)
+    {
+        var collections = await _context.Database.ListCollectionNamesAsync(cancellationToken: token);
+        while (await collections.MoveNextAsync(token))
+        {
+            if (!collections.Current.Contains(collectionName))
+                _context.Database.CreateCollectionAsync(collectionName, cancellationToken: token);
+        }
+    }
+
+    private async Task InitializeIndexesAsync(CancellationToken token)
+    {
+        var indexManager = _context.ZipCodes.Indexes;
+
+        var stateIndex = Builders<ZipCode>.IndexKeys.Ascending(x => x.State);
+        await indexManager.CreateOneAsync(
+            new CreateIndexModel<ZipCode>(stateIndex, new CreateIndexOptions() {Name = "state_asc", Background = true}),
+            cancellationToken: token);
     }
 }

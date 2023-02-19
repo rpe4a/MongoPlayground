@@ -35,3 +35,15 @@ db.zipcodes.aggregate([
     }
 ])
 ```
+
+### Query plan explanation 
+`db.zipcodes.explain().find({"state" : "CA"})`
+
+### Indexes
+`db.zipcodes.createIndex({"state": 1}, {"name": "state-asc"})`
+
+### Full text search
+```js
+db.texts.createIndex({"news" : "text"})
+db.texts.find({$text: {$search: "hope"}})
+```

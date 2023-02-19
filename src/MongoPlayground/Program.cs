@@ -17,7 +17,7 @@ internal static class Program
         var mongoContext = serviceProvider.GetRequiredService<MongoContext>();
         var mongoDatabaseInitializer = serviceProvider.GetRequiredService<MongoDatabaseInitializer>();
 
-        mongoDatabaseInitializer.InitializeDatabase();
+        await mongoDatabaseInitializer.InitializeDatabaseAsync();
 
         //CRUD 
         // await InsertRestaurant(mongoContext);
@@ -31,7 +31,31 @@ internal static class Program
 
         //Aggregation
         // await LooselyTypeAggregationZipCodeOperations(mongoContext);
-        await StrongTypeAggregationZipCodeOperations(mongoContext);
+        // await StrongTypeAggregationZipCodeOperations(mongoContext);
+        
+        //Indexes
+        await WorkingWithIndexes(mongoContext);
+    }
+
+    private static async Task WorkingWithIndexes(MongoContext mongoContext)
+    {
+        var indexZipCodeManager = mongoContext.ZipCodes.Indexes;
+
+        var indexes = await indexZipCodeManager.ListAsync();
+        
+        while (await indexes.MoveNextAsync())
+        {
+            var currentIndex = indexes.Current;
+            foreach (var doc in currentIndex)
+            {
+                var docNames = doc.Names;
+                foreach (string name in docNames)
+                {
+                    var value = doc.GetValue(name);
+                    Console.WriteLine(string.Concat(name, ": ", value));
+                }
+            }
+        }
     }
 
     private static async Task StrongTypeAggregationZipCodeOperations(MongoContext mongoContext)

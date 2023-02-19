@@ -26,8 +26,71 @@ internal static class Program
         // await UpdateRestaurant(mongoContext);
         // await DeleteRestaurant(mongoContext);
         // await BulkRestaurants(mongoContext);
-        await QueryToRestaurant(mongoContext);
-        await QueryToZipCode(mongoContext);
+        // await QueryToRestaurant(mongoContext);
+        // await QueryToZipCode(mongoContext);
+
+        //Aggregation
+        // await LooselyTypeAggregationZipCodeOperations(mongoContext);
+        await StrongTypeAggregationZipCodeOperations(mongoContext);
+    }
+
+    private static async Task StrongTypeAggregationZipCodeOperations(MongoContext mongoContext)
+    {
+        // db.zipcodes.aggregate([
+        // {$group: { "_id" : "$state", "population" : {$sum : "$pop"}}}, 
+        // {$match : {population : {$gte : 5000000}}}, 
+        // {$sort: {"_id" : 1}}, 
+        // {$limit : 5}])
+
+        var result = mongoContext.ZipCodes.Aggregate()
+            .Group(
+                key => key.State,
+                value => new {State = value.Key, Population = value.Sum(key => key.Population)})
+            .Match(x => x.Population >= 500000)
+            .SortBy(x => x.State)
+            .Limit(5)
+            .As<ZipCodePopulation>()
+            .ToList();
+
+        foreach (var item in result)
+        {
+            Console.WriteLine($"{item.State}: {item.Population}");
+        }
+    }
+
+    private static async Task LooselyTypeAggregationZipCodeOperations(MongoContext mongoContext)
+    {
+        // db.zipcodes.aggregate([
+        // {$group: { "_id" : "$state", "population" : {$sum : "$pop"}}}, 
+        // {$match : {population : {$gte : 5000000}}}, 
+        // {$sort: {"_id" : 1}}, 
+        // {$limit : 5}])
+        var groupPipeline = new BsonDocument
+        {
+            {
+                "$group",
+                new BsonDocument {{"_id", "$state"}}
+                    .Add("population", new BsonDocument {{"$sum", "$pop"}})
+            }
+        };
+
+        var matchPipeline = new BsonDocument()
+            {{"$match", new BsonDocument("population", new BsonDocument("$gte", 5000000))}};
+
+        var sortPipeline = new BsonDocument("$sort", new BsonDocument("_id", 1));
+        var limitPipeline = new BsonDocument("$limit", 5);
+
+        var resultList = mongoContext.ZipCodes.Aggregate()
+            .AppendStage<BsonDocument>(groupPipeline)
+            .AppendStage<BsonDocument>(matchPipeline)
+            .AppendStage<BsonDocument>(sortPipeline)
+            .AppendStage<BsonDocument>(limitPipeline)
+            .ToList();
+
+        foreach (var item in resultList)
+        {
+            Console.WriteLine($"{item}");
+        }
     }
 
     private static async Task BulkRestaurants(MongoContext mongoContext)
@@ -61,8 +124,8 @@ internal static class Program
             new InsertOneModel<Restaurant>(newThaiRestaurant),
             new UpdateOneModel<Restaurant>(Builders<Restaurant>.Filter.Eq(r => r.Name, "RandomThai"), updateRestaurant),
             new DeleteOneModel<Restaurant>(Builders<Restaurant>.Filter.Eq(r => r.Name, "PakistaniKing")),
-        }, new BulkWriteOptions() { IsOrdered = true });
-        
+        }, new BulkWriteOptions() {IsOrdered = true});
+
         Console.WriteLine(string.Concat("Deleted count: ", bulkWriteResult.DeletedCount));
         Console.WriteLine(string.Concat("Inserted count: ", bulkWriteResult.InsertedCount));
         Console.WriteLine(string.Concat("Acknowledged: ", bulkWriteResult.IsAcknowledged));

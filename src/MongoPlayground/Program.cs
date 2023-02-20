@@ -32,7 +32,7 @@ internal static class Program
         //Aggregation
         // await LooselyTypeAggregationZipCodeOperations(mongoContext);
         // await StrongTypeAggregationZipCodeOperations(mongoContext);
-        
+
         //Indexes
         await WorkingWithIndexes(mongoContext);
     }
@@ -42,7 +42,7 @@ internal static class Program
         var indexZipCodeManager = mongoContext.ZipCodes.Indexes;
 
         var indexes = await indexZipCodeManager.ListAsync();
-        
+
         while (await indexes.MoveNextAsync())
         {
             var currentIndex = indexes.Current;
@@ -322,7 +322,17 @@ internal static class Program
             .AddTransient<MongoContext>()
             .AddSingleton<MongoDatabaseInitializer>()
             .AddSingleton<IMongoClient>(_ =>
-                new MongoClient(configuration.GetSection(MongoDbOptions.Key).Get<MongoDbOptions>()?.ConnectionString))
+            {
+                // MongoDb settings
+                var settings = MongoClientSettings.FromConnectionString(
+                    configuration.GetSection(MongoDbOptions.Key).Get<MongoDbOptions>()?.ConnectionString);
+
+                settings.ReadConcern = new ReadConcern(ReadConcernLevel.Majority);
+                settings.ReadPreference = ReadPreference.Secondary;
+                settings.WriteConcern = WriteConcern.WMajority;
+
+                return new MongoClient(settings);
+            })
             .BuildServiceProvider();
 
         return serviceProvider;

@@ -1,5 +1,8 @@
 # MongoPlayground
 
+- [Course](https://dotnetcodr.com/2016/03/14/introduction-to-mongodb-with-net-part-1-background/)
+- [Documentation](https://www.mongodb.com/docs/drivers/csharp/current/quick-start/)
+
 ### Start mongo in Docker
 docker run --name mongodb -d -v %YOUR_LOCAL_DIR%:/data/db -p 27017:27017 mongo
 

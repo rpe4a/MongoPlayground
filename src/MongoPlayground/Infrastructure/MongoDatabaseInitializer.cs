@@ -24,6 +24,14 @@ public class MongoDatabaseInitializer
             TryCreateCollection(_options.Collections.RestaurantsCollectionName, token));
 
         await InitializeIndexesAsync(token);
+
+        RegisterClassMapper();
+    }
+
+    private void RegisterClassMapper()
+    {
+        PersonClassMapper.Register();
+        
     }
 
     private async Task TryCreateCollection(string collectionName, CancellationToken token)

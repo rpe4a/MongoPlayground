@@ -35,6 +35,8 @@ internal static class Program
 
         //Indexes
         await WorkingWithIndexes(mongoContext);
+        
+        Environment.Exit(0);
     }
 
     private static async Task WorkingWithIndexes(MongoContext mongoContext)
@@ -316,7 +318,7 @@ internal static class Program
     {
         if (configuration == null)
             throw new ArgumentNullException(nameof(configuration));
-
+        
         var serviceProvider = new ServiceCollection()
             .Configure<MongoDbOptions>(configuration.GetSection(MongoDbOptions.Key))
             .AddTransient<MongoContext>()

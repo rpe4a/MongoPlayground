@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoPlayground.Models;
 using MyApp.Infrastructure;
@@ -34,9 +35,27 @@ internal static class Program
         // await StrongTypeAggregationZipCodeOperations(mongoContext);
 
         //Indexes
-        await WorkingWithIndexes(mongoContext);
-        
+        // await WorkingWithIndexes(mongoContext);
+
+        await WorkingWithPeopleCollection(mongoContext);
+
         Environment.Exit(0);
+    }
+
+    private static async Task WorkingWithPeopleCollection(MongoContext mongoContext)
+    {
+        var person = new Person()
+        {
+            Name = "Mike",
+            Age = 31,
+            DateBirth = DateTime.UtcNow.Date,
+            Hobbies = new List<string>() {"swimming", "cycling", "football"}
+        };
+
+        await mongoContext.People.InsertOneAsync(person);
+
+        person = await mongoContext.People.Find(new FilterDefinitionBuilder<Person>().Empty).FirstOrDefaultAsync();
+        Console.WriteLine(person);
     }
 
     private static async Task WorkingWithIndexes(MongoContext mongoContext)
@@ -318,7 +337,7 @@ internal static class Program
     {
         if (configuration == null)
             throw new ArgumentNullException(nameof(configuration));
-        
+
         var serviceProvider = new ServiceCollection()
             .Configure<MongoDbOptions>(configuration.GetSection(MongoDbOptions.Key))
             .AddTransient<MongoContext>()

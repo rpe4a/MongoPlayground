@@ -20,4 +20,5 @@ public class MongoContext
 
     public IMongoCollection<Restaurant> Restaurants => Database.GetCollection<Restaurant>(_options.Collections.RestaurantsCollectionName);
     public IMongoCollection<ZipCode> ZipCodes => Database.GetCollection<ZipCode>(_options.Collections.ZipCodesCollectionName);
+    public IMongoCollection<Person> People => Database.GetCollection<Person>(_options.Collections.PeopleCollectionName);
 }
